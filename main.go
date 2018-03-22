@@ -12,7 +12,7 @@ import (
 
 type myEnv struct {
 	BotToken string
-	BotId string
+	BotId    string
 }
 
 func main() {
@@ -44,7 +44,20 @@ func handleMessageEvent(rtm *slack.RTM, ev *slack.MessageEvent, env myEnv) error
 		return nil
 	}
 
-	rtm.SendMessage(rtm.NewOutgoingMessage("Hello", ev.Channel))
+	var response string
+	m := strings.Split(strings.TrimSpace(ev.Msg.Text), " ")[1:]
+	switch m[0] {
+	case "list":
+		response = "will show todo list"
+	case "add":
+		response = "the task will be add"
+	case "done", "delete":
+		response = "the task will be delete"
+	default:
+		response = "will show help"
+	}
+
+	rtm.SendMessage(rtm.NewOutgoingMessage(response, ev.Channel))
 	return nil
 }
 
@@ -55,6 +68,6 @@ func getMyEnv() myEnv {
 
 	return myEnv{
 		BotToken: os.Getenv("BOT_TOKEN"),
-		BotId: os.Getenv("BOT_ID"),
+		BotId:    os.Getenv("BOT_ID"),
 	}
 }
