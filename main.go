@@ -1,13 +1,12 @@
 package main
 
 import (
-	"log"
-	"os"
-
+	"fmt"
 	"github.com/joho/godotenv"
 	"github.com/nlopes/slack"
+	"log"
+	"os"
 	"strings"
-	"fmt"
 )
 
 type myEnv struct {
