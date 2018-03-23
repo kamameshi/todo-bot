@@ -1,15 +1,17 @@
 package main
 
 import (
-	"log"
-	"os"
-
+	"fmt"
 	"github.com/joho/godotenv"
 	"github.com/nlopes/slack"
+	"log"
+	"os"
+	"strings"
 )
 
 type myEnv struct {
 	BotToken string
+	BotId    string
 }
 
 func main() {
@@ -27,11 +29,35 @@ func _main(args []string) int {
 	for msg := range rtm.IncomingEvents {
 		switch ev := msg.Data.(type) {
 		case *slack.MessageEvent:
-			rtm.SendMessage(rtm.NewOutgoingMessage("Hello", ev.Channel))
+			if err := handleMessageEvent(rtm, ev, env); err != nil {
+				log.Printf("Failed to handle message: %s", err)
+			}
 		}
 	}
 
 	return 0
+}
+func handleMessageEvent(rtm *slack.RTM, ev *slack.MessageEvent, env myEnv) error {
+	// response only mention
+	if !strings.HasPrefix(ev.Msg.Text, fmt.Sprintf("<@%s> ", env.BotId)) {
+		return nil
+	}
+
+	var response string
+	m := strings.Split(strings.TrimSpace(ev.Msg.Text), " ")[1:]
+	switch m[0] {
+	case "list":
+		response = "will show todo list"
+	case "add":
+		response = "the task will be add"
+	case "done", "delete":
+		response = "the task will be delete"
+	default:
+		response = "will show help"
+	}
+
+	rtm.SendMessage(rtm.NewOutgoingMessage(response, ev.Channel))
+	return nil
 }
 
 func getMyEnv() myEnv {
@@ -41,5 +67,6 @@ func getMyEnv() myEnv {
 
 	return myEnv{
 		BotToken: os.Getenv("BOT_TOKEN"),
+		BotId:    os.Getenv("BOT_ID"),
 	}
 }
