@@ -5,6 +5,8 @@ services:
     environment:
       BOT_TOKEN:
       BOT_ID:
+    ports:
+      - "8080:8080"
     depends_on:
       - 'mongodb'
   mongodb:
