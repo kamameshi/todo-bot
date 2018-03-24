@@ -92,7 +92,7 @@ func getAssign(text string) string {
 	m := strings.Split(text, " ")
 	lastM := m[len(m)-1]
 
-	if strings.HasPrefix(lastM, "@") {
+	if strings.HasPrefix(lastM, "<@") {
 		return lastM
 	} else {
 		return ""
