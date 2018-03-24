@@ -12,8 +12,9 @@ import (
 )
 
 type myEnv struct {
-	BotToken string
-	BotId    string
+	BotToken   string
+	BotId      string
+	MongodbUrl string
 }
 
 type Todo struct {
@@ -22,28 +23,26 @@ type Todo struct {
 	Assign string        `bson:"assign"`
 }
 
+const (
+	database = "todo_schema"
+	todoCollection = "todo"
+)
+
 func main() {
 	os.Exit(_main(os.Args[1:]))
 }
 
 func _main(args []string) int {
-	session, err := mgo.Dial("mongodb://localhost/test")
+	env := getMyEnv()
+
+	session, err := mgo.Dial(env.MongodbUrl)
 	if err != nil {
 		log.Printf("Failed open mongo: %s", err)
 		return 1
 	}
+
 	defer session.Close()
-	db := session.DB("todo_schema")
-
-    todo := &Todo{
-        bson.NewObjectId(),
-        "test todo",
-        "@mapyo",
-    }
-
-    db.C("todo").Insert(todo)
-
-	env := getMyEnv()
+	db := session.DB(database)
 
 	api := slack.New(env.BotToken)
 
@@ -53,7 +52,7 @@ func _main(args []string) int {
 	for msg := range rtm.IncomingEvents {
 		switch ev := msg.Data.(type) {
 		case *slack.MessageEvent:
-			if err := handleMessageEvent(rtm, ev, env); err != nil {
+			if err := handleMessageEvent(rtm, ev, env, db); err != nil {
 				log.Printf("Failed to handle message: %s", err)
 			}
 		}
@@ -61,7 +60,8 @@ func _main(args []string) int {
 
 	return 0
 }
-func handleMessageEvent(rtm *slack.RTM, ev *slack.MessageEvent, env myEnv) error {
+
+func handleMessageEvent(rtm *slack.RTM, ev *slack.MessageEvent, env myEnv, db *mgo.Database) error {
 	// response only mention
 	if !strings.HasPrefix(ev.Msg.Text, fmt.Sprintf("<@%s> ", env.BotId)) {
 		return nil
@@ -71,7 +71,7 @@ func handleMessageEvent(rtm *slack.RTM, ev *slack.MessageEvent, env myEnv) error
 	m := strings.Split(strings.TrimSpace(ev.Msg.Text), " ")[1:]
 	switch m[0] {
 	case "list":
-		response = "will show todo list"
+		response = showTodoList(db)
 	case "add":
 		response = "the task will be add"
 	case "done", "delete":
@@ -83,6 +83,19 @@ func handleMessageEvent(rtm *slack.RTM, ev *slack.MessageEvent, env myEnv) error
 	rtm.SendMessage(rtm.NewOutgoingMessage(response, ev.Channel))
 	return nil
 }
+func showTodoList(db *mgo.Database) string {
+	var todoList []Todo
+
+	db.C(todoCollection).Find(nil).All(&todoList)
+	log.Printf("data: %s", todoList)
+
+	var result string
+	for _, todo := range todoList {
+		result += fmt.Sprintf("ID: %s - Task: %s - Assign: %s\n", todo.ID.Hex(), todo.Title, todo.Assign)
+	}
+
+	return result
+}
 
 func getMyEnv() myEnv {
 	if err := godotenv.Load(); err != nil {
@@ -90,7 +103,8 @@ func getMyEnv() myEnv {
 	}
 
 	return myEnv{
-		BotToken: os.Getenv("BOT_TOKEN"),
-		BotId:    os.Getenv("BOT_ID"),
+		BotToken:   os.Getenv("BOT_TOKEN"),
+		BotId:      os.Getenv("BOT_ID"),
+		MongodbUrl: os.Getenv("MONGODB_URL"),
 	}
 }
