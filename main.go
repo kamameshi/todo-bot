@@ -24,7 +24,7 @@ type Todo struct {
 }
 
 const (
-	database = "todo_schema"
+	database       = "todo_schema"
 	todoCollection = "todo"
 )
 
@@ -60,6 +60,44 @@ func _main(args []string) int {
 
 	return 0
 }
+func addTodoList(title, assign string, db *mgo.Database) string {
+	todo := &Todo{
+		bson.NewObjectId(),
+		title,
+		assign,
+	}
+
+	if err := db.C(todoCollection).Insert(todo); err != nil {
+		log.Fatalf("Failed insert: %s", err)
+		return "add task failed"
+	}
+
+	return "add task completed\n" + showTodoList(db)
+}
+
+func getTitleAndAssign(text string) (string, string) {
+	assign := getAssign(text)
+	if len(assign) == 0 {
+		// no assign
+		return text, assign
+	} else {
+		// assigned
+		m := strings.Split(text, " ")
+		mExcludedAssigned := m[:len(m)-1]
+		return strings.Join(mExcludedAssigned, " "), assign
+	}
+}
+
+func getAssign(text string) string {
+	m := strings.Split(text, " ")
+	lastM := m[len(m)-1]
+
+	if strings.HasPrefix(lastM, "@") {
+		return lastM
+	} else {
+		return ""
+	}
+}
 
 func handleMessageEvent(rtm *slack.RTM, ev *slack.MessageEvent, env myEnv, db *mgo.Database) error {
 	// response only mention
@@ -73,7 +111,9 @@ func handleMessageEvent(rtm *slack.RTM, ev *slack.MessageEvent, env myEnv, db *m
 	case "list":
 		response = showTodoList(db)
 	case "add":
-		response = "the task will be add"
+		titleWithAssign := strings.Join(m[1:], " ")
+		title, assign := getTitleAndAssign(titleWithAssign)
+		response = addTodoList(title, assign, db)
 	case "done", "delete":
 		response = "the task will be delete"
 	default:
