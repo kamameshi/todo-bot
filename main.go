@@ -135,7 +135,11 @@ func showTodoList(db *mgo.Database) string {
 		result += fmt.Sprintf("ID: %s - Task: %s - Assign: %s\n", todo.ID.Hex(), todo.Title, todo.Assign)
 	}
 
-	return result
+	if len(result) == 0 {
+		return "no task list"
+	} else {
+		return result
+	}
 }
 
 func deleteTodoList(todoId string, db *mgo.Database) string {
