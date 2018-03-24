@@ -115,7 +115,7 @@ func handleMessageEvent(rtm *slack.RTM, ev *slack.MessageEvent, env myEnv, db *m
 		title, assign := getTitleAndAssign(titleWithAssign)
 		response = addTodoList(title, assign, db)
 	case "done", "delete":
-		response = "the task will be delete"
+		response = deleteTodoList(m[1], db)
 	default:
 		response = "will show help"
 	}
@@ -123,6 +123,7 @@ func handleMessageEvent(rtm *slack.RTM, ev *slack.MessageEvent, env myEnv, db *m
 	rtm.SendMessage(rtm.NewOutgoingMessage(response, ev.Channel))
 	return nil
 }
+
 func showTodoList(db *mgo.Database) string {
 	var todoList []Todo
 
@@ -135,6 +136,16 @@ func showTodoList(db *mgo.Database) string {
 	}
 
 	return result
+}
+
+func deleteTodoList(todoId string, db *mgo.Database) string {
+	id := bson.ObjectIdHex(todoId)
+	if err := db.C(todoCollection).RemoveId(id); err != nil {
+		log.Printf("Failed delete todoList: %s", err)
+		return fmt.Sprintf("Failed delete todoList: %s", err)
+	} else {
+		return "complete|delete task completed\n" + showTodoList(db)
+	}
 }
 
 func getMyEnv() myEnv {
