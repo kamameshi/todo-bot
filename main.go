@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/joho/godotenv"
 	"github.com/nlopes/slack"
+	"gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
 	"log"
 	"os"
 	"strings"
@@ -14,11 +16,33 @@ type myEnv struct {
 	BotId    string
 }
 
+type Todo struct {
+	ID     bson.ObjectId `bson:"_id"`
+	Title  string        `bson:"title"`
+	Assign string        `bson:"assign"`
+}
+
 func main() {
 	os.Exit(_main(os.Args[1:]))
 }
 
 func _main(args []string) int {
+	session, err := mgo.Dial("mongodb://localhost/test")
+	if err != nil {
+		log.Printf("Failed open mongo: %s", err)
+		return 1
+	}
+	defer session.Close()
+	db := session.DB("todo_schema")
+
+    todo := &Todo{
+        bson.NewObjectId(),
+        "test todo",
+        "@mapyo",
+    }
+
+    db.C("todo").Insert(todo)
+
 	env := getMyEnv()
 
 	api := slack.New(env.BotToken)
