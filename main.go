@@ -153,13 +153,11 @@ func deleteTodoList(todoId string, db *mgo.Database) string {
 }
 
 func getHelpMessage() string {
-	return "invalid command" +
-		"\n\n" +
-		"@todobot list" +
-		"\n" +
-		"@todobot add @mapyo buy milk" +
-		"\n" +
-		"@todobot done|delete 5ab652b9c40d85a0b043aa71"
+	return `invalid command
+
+@todobot list
+@todobot add @mapyo buy milk
+@todobot done|delete 5ab652b9c40d85a0b043aa71`
 }
 
 func getMyEnv() myEnv {
