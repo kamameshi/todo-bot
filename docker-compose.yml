@@ -1,0 +1,21 @@
+version: '2'
+services:
+  slackbot:
+    build: .
+    environment:
+      BOT_TOKEN:
+      BOT_ID:
+    ports:
+      - "8080:8080"
+    volumes:
+      - ".:/app"
+    depends_on:
+      - 'mongodb'
+  mongodb:
+    image: mongo
+#     volumes:
+#       - ${localPaht}:/data/db
+    ports:
+      - "27017:27017"
+    restart: always
+
